@@ -9,7 +9,7 @@ defmodule ConfigPin.MixProject do
       start_permanent: Mix.env == :prod,
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
+      test_coverage: [tool: ExCoveralls, test_task: "espec"],
       dialyzer: [
         ignore_warnings: "dialyzer.ignore.exs",
         list_unused_filters: true,
@@ -22,7 +22,8 @@ defmodule ConfigPin.MixProject do
         "coveralls.post": :test,
         "coveralls.html": :test,
         "coverage.show": :test,
-      ]
+        espec: :test,
+      ],
     ]
   end
 
@@ -37,6 +38,7 @@ defmodule ConfigPin.MixProject do
     [
       "coverage.show": "do coveralls, cmd xdg-open cover/excoveralls.html",
       "docs.show": "do docs, cmd xdg-open doc/index.html",
+      test: "espec --cover",
     ]
   end
 
@@ -47,6 +49,7 @@ defmodule ConfigPin.MixProject do
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"}
       {:excoveralls, "~> 0.13", only: :test},
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},
+      {:espec, "~> 1.8", only: :test},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
     ]
   end
