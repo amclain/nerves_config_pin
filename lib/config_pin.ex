@@ -1,0 +1,2 @@
+defmodule ConfigPin do
+end
