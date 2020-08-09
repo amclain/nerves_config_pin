@@ -34,6 +34,68 @@ defmodule ConfigPin.Spec do
     end
   end
 
+  context "query" do
+    let :cmd_expected_args, do: ["-q", "P9_12"]
+    let :cmd_return, do: {"P9_12 Mode: gpio_pu Direction: in Value: 1\n", 0}
+
+    it "parses the response for a gpio pin" do
+      expect ConfigPin.query(9, 12)
+      |> to(eq {
+        :ok,
+        %{
+          header: 9,
+          pin: 12,
+          mode: :gpio_pu,
+          direction: :in,
+          value: 1,
+        }
+      })
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-q", "P9_1"]
+    let :cmd_return, do: {"Pin is not modifiable: P9_01 GND\n", 1}
+
+    it "parses the response for a pin that is not modifiable" do
+      expect ConfigPin.query(9, 1)
+      |> to(eq {:ok, {:pin_not_modifiable, "GND"}})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-q", "P0_1000"]
+    let :cmd_return, do: {"Invalid pin: P0_1000\n", 1}
+
+    it "returns an error for an invalid pin" do
+      expect ConfigPin.query(0, 1000)
+      |> to(eq {:error, :invalid_pin})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-q", "P_"]
+    let :cmd_return, do: {"Invalid pin: \"P_\" \"_\"\n", 1}
+
+    it "returns an error for an invalid pin with an invalid name" do
+      expect ConfigPin.query(nil, nil)
+      |> to(eq {:error, :invalid_pin})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-q", "P9_28"]
+    let :cmd_return, do: {"P9_28 pinmux file not found!\nCannot read pinmux file: /sys/devices/platform/ocp/ocp*P9_28_pinmux/state\n",
+ 1}
+
+    it "returns an error when the pinmux file is not found" do
+      expect ConfigPin.query(9, 28)
+      |> to(eq {:error, :pinmux_file_not_found})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+  end
+
   context "set" do
     let :cmd_expected_args, do: ["P9_12", "gpio_pu"]
     let :cmd_return, do: {"", 0}

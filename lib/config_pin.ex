@@ -10,6 +10,28 @@ defmodule ConfigPin do
   @type config_pin_error ::
     {:error, {message :: String.t, exit_code :: non_neg_integer}}
 
+  @valid_modes [
+    :default,
+    :gpio,
+    :gpio_pu,
+    :gpio_pd,
+    :gpio_input,
+    :pruout,
+    :pruin,
+    :spi_cs,
+    :i2c,
+    :pwm,
+    :pru_uart,
+    :spi_sclk,
+    :uart,
+    :spi,
+    :can,
+    :qep,
+    :pru_ecap,
+    :timer,
+    :pwm2,
+  ]
+
   @doc """
   Send a command to the `config-pin` utility.
 
@@ -44,6 +66,65 @@ defmodule ConfigPin do
 
     {result, _} = ConfigPin.cmd(["-i", pin_string])
     IO.puts result
+  end
+
+  @doc """
+  Query the pin configuration details.
+
+  `header` - The number of the header the pin belongs to.
+    For example, the BeagleBone Black header `P9` would be `9`.
+
+  `pin` - The physical number of the pin to configure.
+    For example, BBB `GPIO_30` is on pin `11`.
+
+  Returns a map of the configuration on success, or passes through the
+  error message and exit code from `config-pin` on failure.
+  """
+  @spec query(header :: non_neg_integer, pin :: non_neg_integer) ::
+    {:ok, map}
+    | {:ok, {:pin_not_modifiable, function :: String.t}}
+    | {:error, :invalid_pin}
+    | {:error, :pinmux_file_not_found}
+    | config_pin_error
+  def query(header, pin) do
+    pin_string = make_pin_string(header, pin)
+
+    case ConfigPin.cmd(["-q", pin_string]) do
+      {response, 0} ->
+        [header_and_pin | params] = split_query_params_from_string(response)
+
+        {header, pin} = parse_header_and_pin(header_and_pin)
+
+        result =
+          %{
+            header: header,
+            pin: pin,
+          }
+          |> Map.merge(parse_query_params_list(params))
+
+        {:ok, result}
+
+      {<<"Pin is not modifiable:", description::binary>>, 1} ->
+        function =
+          description
+          |> String.trim
+          |> String.split
+          |> List.last
+
+        {:ok, {:pin_not_modifiable, function}}
+
+      {<<"Invalid pin:", _::binary>>, 1} ->
+        {:error, :invalid_pin}
+
+      {response, _} = error ->
+        cond do
+          response =~ "pinmux file not found" ->
+            {:error, :pinmux_file_not_found}
+
+          true ->
+            format_config_pin_error(error)
+        end
+    end
   end
 
   @doc """
@@ -111,7 +192,63 @@ defmodule ConfigPin do
     "P#{header}_#{pin}"
   end
 
+  defp parse_header_and_pin(header_and_pin_string) do
+    # Example: "P9_11" => {9, 11}
+
+    header_and_pin_string
+    |> String.trim_leading("P")
+    |> String.split("_")
+    |> Enum.map(&String.to_integer/1)
+    |> List.to_tuple
+  end
+
+  defp split_query_params_from_string(params_string) do
+    params_string
+    |> String.trim_trailing
+    |> String.replace(~r/\s+([A-Z])/, "\n\\1")
+    |> String.split("\n")
+  end
+
   defp format_config_pin_error({message, exit_code}) do
     {:error, {String.trim(message), exit_code}}
+  end
+
+  defp parse_query_params_list(params) do
+    params
+    |> Enum.map(fn param ->
+      param
+      |> String.downcase
+      |> String.split(": ")
+      |> List.to_tuple
+    end)
+    |> Enum.map(&cast/1)
+    |> Enum.reject(& &1 == nil)
+    |> Enum.into(%{})
+  end
+
+  defp cast({"direction", direction}) do
+    case direction do
+      "in" -> {:direction, :in}
+      "out" -> {:direction, :out}
+      _ -> nil
+    end
+  end
+
+  defp cast({"mode", mode}) do
+    valid_modes = Enum.map(@valid_modes, &to_string/1)
+
+    if mode in valid_modes do
+      {:mode, String.to_atom(mode)}
+    else
+      nil
+    end
+  end
+
+  defp cast({"value", value}) do
+    {:value, String.to_integer(value)}
+  end
+
+  defp cast(_) do
+    nil
   end
 end
