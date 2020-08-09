@@ -8,6 +8,32 @@ defmodule ConfigPin.Spec do
     end)
   end
 
+  context "info" do
+    let :cmd_expected_args, do: ["-i", "P9_12"]
+    let :cmd_return, do: {"Pin name: P9_12\nFunction if no cape loaded: gpio\nFunction if cape loaded: default gpio gpio_pu gpio_pd gpio_input uart\nFunction information: gpio0_30 default gpio0_30 gpio0_30 gpio0_30 gpio0_30 uart4_rxd\nKernel GPIO id: 30\nPRU GPIO id: 62\n", 0}
+
+    it "prints the information for a pin to the console" do
+      allow IO |> to(accept :puts, fn message ->
+        expect message |> to(eq """
+        Pin name: P9_12
+        Function if no cape loaded: gpio
+        Function if cape loaded: default gpio gpio_pu gpio_pd gpio_input uart
+        Function information: gpio0_30 default gpio0_30 gpio0_30 gpio0_30 gpio0_30 uart4_rxd
+        Kernel GPIO id: 30
+        PRU GPIO id: 62
+        """)
+
+        :ok
+      end)
+
+      expect ConfigPin.info(9, 12)
+      |> to(eq :ok)
+
+      expect ConfigPin |> to(accepted :cmd)
+      expect IO |> to(accepted :puts)
+    end
+  end
+
   context "set" do
     let :cmd_expected_args, do: ["P9_12", "gpio_pu"]
     let :cmd_return, do: {"", 0}

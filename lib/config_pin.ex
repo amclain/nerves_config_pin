@@ -30,6 +30,23 @@ defmodule ConfigPin do
   end
 
   @doc """
+  Print the information about a pin to the console.
+
+  `header` - The number of the header the pin belongs to.
+    For example, the BeagleBone Black header `P9` would be `9`.
+
+  `pin` - The physical number of the pin to configure.
+    For example, BBB `GPIO_30` is on pin `11`.
+  """
+  @spec info(header :: non_neg_integer, pin :: non_neg_integer) :: :ok
+  def info(header, pin) do
+    pin_string = make_pin_string(header, pin)
+
+    {result, _} = ConfigPin.cmd(["-i", pin_string])
+    IO.puts result
+  end
+
+  @doc """
   Set the mode for a pin.
 
   `header` - The number of the header the pin belongs to.
