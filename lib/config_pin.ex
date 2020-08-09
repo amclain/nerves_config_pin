@@ -22,4 +22,34 @@ defmodule ConfigPin do
   def cmd(args) do
     System.cmd("config-pin", args, stderr_to_stdout: true)
   end
+
+  @doc """
+  Set the mode for a pin.
+
+  `header` - The number of the header the pin belongs to.
+    For example, the BeagleBone Black header `P9` would be `9`.
+
+  `pin` - The physical number of the pin to configure.
+    For example, BBB `GPIO_30` is on pin `11`.
+
+  `mode` - The mode to set the pin to.
+
+  Returns `:ok` on success, or passes through the error message and exit code
+  from `config-pin` on failure.
+  """
+  @spec set(header :: non_neg_integer, pin :: non_neg_integer, mode :: term) ::
+    :ok
+    | {:error, {message :: String.t, exit_code :: non_neg_integer}}
+  def set(header, pin, mode) do
+    pin_string = "P#{header}_#{pin}"
+    mode_string = to_string(mode)
+
+    case ConfigPin.cmd([pin_string, mode_string]) do
+      {_, 0} ->
+        :ok
+
+      {message, exit_code} ->
+        {:error, {String.trim(message), exit_code}}
+    end
+  end
 end
