@@ -142,9 +142,9 @@ defmodule ConfigPin.Spec do
     let :cmd_expected_args, do: ["P9_12", "bogus"]
     let :cmd_return, do: {"Invalid mode: bogus\n", 1}
 
-    it "passes through the config-pin error on failure" do
+    it "returns an error if the pin is set to an invalid mode" do
       expect ConfigPin.set(9, 12, :bogus)
-      |> to(eq {:error, {"Invalid mode: bogus", 1}})
+      |> to(eq {:error, :invalid_mode})
 
       expect ConfigPin |> to(accepted :cmd)
     end

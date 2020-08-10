@@ -174,7 +174,9 @@ defmodule ConfigPin do
   from `config-pin` on failure.
   """
   @spec set(header :: non_neg_integer, pin :: non_neg_integer, mode :: term) ::
-    :ok | config_pin_error
+    :ok
+    | {:error, :invalid_mode}
+    | config_pin_error
   def set(header, pin, mode) do
     pin_string = make_pin_string(header, pin)
     mode_string = to_string(mode)
@@ -182,6 +184,9 @@ defmodule ConfigPin do
     case ConfigPin.cmd([pin_string, mode_string]) do
       {_, 0} ->
         :ok
+
+      {<<"Invalid mode:", _::binary>>, 1} ->
+        {:error, :invalid_mode}
 
       error ->
         format_config_pin_error(error)
