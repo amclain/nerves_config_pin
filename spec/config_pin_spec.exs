@@ -131,7 +131,7 @@ defmodule ConfigPin.Spec do
 
     it "returns an error if the pinmux file is not readable" do
       expect ConfigPin.query(9, 28)
-      |> to(eq {:error, {:file_unreadable, :pinmux, "/pinmux/file"}})
+      |> to(eq {:error, {:file_unreadable, {:pinmux, "/pinmux/file"}}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
@@ -174,7 +174,7 @@ defmodule ConfigPin.Spec do
 
     it "returns an error if the gpio direction file can't be written to" do
       expect ConfigPin.set(9, 12, :gpio)
-      |> to(eq {:error, {:file_unwritable, :gpio_direction, "/gpio/file"}})
+      |> to(eq {:error, {:file_unwritable, {:gpio_direction, "/gpio/file"}}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
@@ -184,7 +184,7 @@ defmodule ConfigPin.Spec do
 
     it "returns an error if the pinmux file can't be written to" do
       expect ConfigPin.set(9, 12, :gpio)
-      |> to(eq {:error, {:file_unwritable, :pinmux, "/pinmux/file"}})
+      |> to(eq {:error, {:file_unwritable, {:pinmux, "/pinmux/file"}}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
