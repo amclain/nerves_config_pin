@@ -199,4 +199,26 @@ defmodule ConfigPin.Spec do
       expect ConfigPin |> to(accepted :cmd)
     end
   end
+
+  context "set_from_file" do
+    let :cmd_expected_args, do: ["-f", "/pinmux/file"]
+    let :cmd_return, do: {"", 0}
+
+    it "can set a list of pins from a file" do
+      expect ConfigPin.set_from_file("/pinmux/file")
+      |> to(eq :ok)
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-f", "/bogus"]
+    let :cmd_return, do: {"Cannot read file: /bogus\n", 1}
+
+    it "returns an error if the file is not readable" do
+      expect ConfigPin.set_from_file("/bogus")
+      |> to(eq {:error, {:file_unreadable, "/bogus"}})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+  end
 end

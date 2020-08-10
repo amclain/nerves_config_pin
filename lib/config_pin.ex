@@ -18,8 +18,9 @@ defmodule ConfigPin do
     | {:error, :pinmux_file_not_found}
     | {:error, :pin_not_exported}
     | {:error, {:pin_not_modifiable, function :: String.t}}
-    | {:error, {:file_unwritable, :gpio_direction | :pinmux, file_path :: String.t}}
+    | {:error, {:file_unreadable, file_path :: String.t}}
     | {:error, {:file_unreadable, :pinmux, file_path :: String.t}}
+    | {:error, {:file_unwritable, :gpio_direction | :pinmux, file_path :: String.t}}
     | {:error, {:unknown, message :: String.t, exit_code :: non_neg_integer}}
 
   @valid_modes [
@@ -178,6 +179,34 @@ defmodule ConfigPin do
     end
   end
 
+  @doc """
+  Set a list of pin configurations defined in a file.
+
+  ***The file is passed directly to `config-pin` and is not processed
+  by this library.***
+
+  The format is `<header>_<pin> <mode>\\n`. Comments and white-space
+  are allowed. Each configuration must end with a line terminator.
+
+  Example file:
+
+  ```
+  # <header>_<pin> <mode>
+  P9_11 gpio_pu
+  P9_12 gpio_pd
+  ```
+  """
+  @spec set_from_file(file_path :: String.t) :: :ok | config_pin_error
+  def set_from_file(file_path) do
+    case ConfigPin.cmd(["-f", file_path]) do
+      {_, 0} ->
+        :ok
+
+      error ->
+        parse_error(error)
+    end
+  end
+
   defp make_pin_string(header, pin) do
     "P#{header}_#{pin}"
   end
@@ -192,6 +221,10 @@ defmodule ConfigPin do
 
   defp parse_error({<<"WARNING: GPIO pin not exported", _::binary>>, 1}) do
     {:error, :pin_not_exported}
+  end
+
+  defp parse_error({<<"Cannot read file:", path::binary>>, 1}) do
+    {:error, {:file_unreadable, String.trim(path)}}
   end
 
   defp parse_error({<<"Cannot write gpio direction file:", path::binary>>, 1}) do
