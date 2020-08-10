@@ -16,7 +16,10 @@ defmodule ConfigPin do
     {:error, :invalid_mode}
     | {:error, :invalid_pin}
     | {:error, :pinmux_file_not_found}
+    | {:error, :pin_not_exported}
     | {:error, {:pin_not_modifiable, function :: String.t}}
+    | {:error, {:file_unwritable, :gpio_direction | :pinmux, file_path :: String.t}}
+    | {:error, {:file_unreadable, :pinmux, file_path :: String.t}}
     | {:error, {:unknown, message :: String.t, exit_code :: non_neg_integer}}
 
   @valid_modes [
@@ -185,6 +188,22 @@ defmodule ConfigPin do
 
   defp parse_error({<<"Invalid pin:", _::binary>>, 1}) do
     {:error, :invalid_pin}
+  end
+
+  defp parse_error({<<"WARNING: GPIO pin not exported", _::binary>>, 1}) do
+    {:error, :pin_not_exported}
+  end
+
+  defp parse_error({<<"Cannot write gpio direction file:", path::binary>>, 1}) do
+    {:error, {:file_unwritable, :gpio_direction, String.trim(path)}}
+  end
+
+  defp parse_error({<<"Cannot read pinmux file:", path::binary>>, 1}) do
+    {:error, {:file_unreadable, :pinmux, String.trim(path)}}
+  end
+
+  defp parse_error({<<"Cannot write pinmux file:", path::binary>>, 1}) do
+    {:error, {:file_unwritable, :pinmux, String.trim(path)}}
   end
 
   defp parse_error({<<"Pin is not modifiable:", description::binary>>, 1}) do

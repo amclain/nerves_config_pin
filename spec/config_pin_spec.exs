@@ -117,8 +117,7 @@ defmodule ConfigPin.Spec do
     end
 
     let :cmd_expected_args, do: ["-q", "P9_28"]
-    let :cmd_return, do: {"P9_28 pinmux file not found!\nCannot read pinmux file: /sys/devices/platform/ocp/ocp*P9_28_pinmux/state\n",
- 1}
+    let :cmd_return, do: {"P9_28 pinmux file not found!\nCannot read pinmux file: /sys/devices/platform/ocp/ocp*P9_28_pinmux/state\n", 1}
 
     it "returns an error when the pinmux file is not found" do
       expect ConfigPin.query(9, 28)
@@ -126,6 +125,17 @@ defmodule ConfigPin.Spec do
 
       expect ConfigPin |> to(accepted :cmd)
     end
+
+    let :cmd_expected_args, do: ["-q", "P9_28"]
+    let :cmd_return, do: {"Cannot read pinmux file: /pinmux/file\n", 1}
+
+    it "returns an error if the pinmux file is not readable" do
+      expect ConfigPin.query(9, 28)
+      |> to(eq {:error, {:file_unreadable, :pinmux, "/pinmux/file"}})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
 
     let :cmd_expected_args, do: ["-q", "P0_0"]
     let :cmd_return, do: {"<unknown error>", 1}
@@ -155,6 +165,36 @@ defmodule ConfigPin.Spec do
     it "returns an error if the pin is set to an invalid mode" do
       expect ConfigPin.set(9, 12, :bogus)
       |> to(eq {:error, :invalid_mode})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["P9_12", "gpio"]
+    let :cmd_return, do: {"Cannot write gpio direction file: /gpio/file\n", 1}
+
+    it "returns an error if the gpio direction file can't be written to" do
+      expect ConfigPin.set(9, 12, :gpio)
+      |> to(eq {:error, {:file_unwritable, :gpio_direction, "/gpio/file"}})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["P9_12", "gpio"]
+    let :cmd_return, do: {"Cannot write pinmux file: /pinmux/file\n", 1}
+
+    it "returns an error if the pinmux file can't be written to" do
+      expect ConfigPin.set(9, 12, :gpio)
+      |> to(eq {:error, {:file_unwritable, :pinmux, "/pinmux/file"}})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["P9_12", "gpio"]
+    let :cmd_return, do: {"WARNING: GPIO pin not exported, cannot set direction or value!\n", 1}
+
+    it "returns an error if the gpio pin was not exported" do
+      expect ConfigPin.set(9, 12, :gpio)
+      |> to(eq {:error, :pin_not_exported})
 
       expect ConfigPin |> to(accepted :cmd)
     end
