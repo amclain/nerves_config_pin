@@ -1,11 +1,15 @@
 defmodule ConfigPin.MixProject do
   use Mix.Project
 
+  @description "A BeagleBone config-pin wrapper for use in Elixir Nerves projects."
+
   def project do
     [
       app: :nerves_config_pin,
-      version: "0.1.0",
+      description: @description,
+      version: "0.0.1",
       elixir: "~> 1.10",
+      package: package(),
       start_permanent: Mix.env == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -59,6 +63,15 @@ defmodule ConfigPin.MixProject do
     [
       main:   "ConfigPin",
       extras: ["README.md"]
+    ]
+  end
+
+  defp package do
+    [
+      name: "nerves_config_pin",
+      maintainers: ["Alex McLain"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/amclain/nerves_config_pin"}
     ]
   end
 
