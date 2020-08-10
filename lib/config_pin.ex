@@ -69,6 +69,37 @@ defmodule ConfigPin do
   end
 
   @doc """
+  Returns a list of valid modes for a pin.
+
+  `header` - The number of the header the pin belongs to.
+    For example, the BeagleBone Black header `P9` would be `9`.
+
+  `pin` - The physical number of the pin to configure.
+    For example, BBB `GPIO_30` is on pin `11`.
+
+  This function passes through the error message and exit code from `config-pin`
+  on failure.
+  """
+  @spec list_modes(header :: non_neg_integer, pin :: non_neg_integer) ::
+    :ok | config_pin_error
+  def list_modes(header, pin) do
+    pin_string = make_pin_string(header, pin)
+
+    case ConfigPin.cmd(["-l", pin_string]) do
+      {result, 0} ->
+        list =
+          result
+          |> String.trim
+          |> String.split
+
+        {:ok, list}
+
+      error ->
+        format_config_pin_error(error)
+    end
+  end
+
+  @doc """
   Query the pin configuration details.
 
   `header` - The number of the header the pin belongs to.
@@ -151,37 +182,6 @@ defmodule ConfigPin do
     case ConfigPin.cmd([pin_string, mode_string]) do
       {_, 0} ->
         :ok
-
-      error ->
-        format_config_pin_error(error)
-    end
-  end
-
-  @doc """
-  Returns a list of valid modes for a pin.
-
-  `header` - The number of the header the pin belongs to.
-    For example, the BeagleBone Black header `P9` would be `9`.
-
-  `pin` - The physical number of the pin to configure.
-    For example, BBB `GPIO_30` is on pin `11`.
-
-  This function passes through the error message and exit code from `config-pin`
-  on failure.
-  """
-  @spec valid_modes(header :: non_neg_integer, pin :: non_neg_integer) ::
-    :ok | config_pin_error
-  def valid_modes(header, pin) do
-    pin_string = make_pin_string(header, pin)
-
-    case ConfigPin.cmd(["-l", pin_string]) do
-      {result, 0} ->
-        list =
-          result
-          |> String.trim
-          |> String.split
-
-        {:ok, list}
 
       error ->
         format_config_pin_error(error)

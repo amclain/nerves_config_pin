@@ -34,6 +34,38 @@ defmodule ConfigPin.Spec do
     end
   end
 
+  context "list_modes" do
+    let :cmd_expected_args, do: ["-l", "P9_12"]
+    let :cmd_return, do: {"default gpio gpio_pu gpio_pd gpio_input uart\n", 0}
+
+    it "returns a list of valid modes for a pin" do
+      expect ConfigPin.list_modes(9, 12)
+      |> to(eq {
+        :ok,
+        [
+          "default",
+          "gpio",
+          "gpio_pu",
+          "gpio_pd",
+          "gpio_input",
+          "uart",
+        ]
+      })
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-l", "P9_1"]
+    let :cmd_return, do: {"Pin is not modifiable: 9.1 GND\n", 1}
+
+    it "passes through the config-pin error on failure" do
+      expect ConfigPin.list_modes(9, 1)
+      |> to(eq {:error, {"Pin is not modifiable: 9.1 GND", 1}})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+  end
+
   context "query" do
     let :cmd_expected_args, do: ["-q", "P9_12"]
     let :cmd_return, do: {"P9_12 Mode: gpio_pu Direction: in Value: 1\n", 0}
@@ -113,38 +145,6 @@ defmodule ConfigPin.Spec do
     it "passes through the config-pin error on failure" do
       expect ConfigPin.set(9, 12, :bogus)
       |> to(eq {:error, {"Invalid mode: bogus", 1}})
-
-      expect ConfigPin |> to(accepted :cmd)
-    end
-  end
-
-  context "valid_modes" do
-    let :cmd_expected_args, do: ["-l", "P9_12"]
-    let :cmd_return, do: {"default gpio gpio_pu gpio_pd gpio_input uart\n", 0}
-
-    it "returns a list of valid modes for a pin" do
-      expect ConfigPin.valid_modes(9, 12)
-      |> to(eq {
-        :ok,
-        [
-          "default",
-          "gpio",
-          "gpio_pu",
-          "gpio_pd",
-          "gpio_input",
-          "uart",
-        ]
-      })
-
-      expect ConfigPin |> to(accepted :cmd)
-    end
-
-    let :cmd_expected_args, do: ["-l", "P9_1"]
-    let :cmd_return, do: {"Pin is not modifiable: 9.1 GND\n", 1}
-
-    it "passes through the config-pin error on failure" do
-      expect ConfigPin.valid_modes(9, 1)
-      |> to(eq {:error, {"Pin is not modifiable: 9.1 GND", 1}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
