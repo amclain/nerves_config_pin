@@ -78,8 +78,8 @@ defmodule ConfigPin do
   def info(header, pin) do
     pin_string = make_pin_string(header, pin)
 
-    {result, _} = ConfigPin.cmd(["-i", pin_string])
-    IO.puts result
+    {response, _} = ConfigPin.cmd(["-i", pin_string])
+    IO.puts response
   end
 
   @doc """
@@ -97,9 +97,9 @@ defmodule ConfigPin do
     pin_string = make_pin_string(header, pin)
 
     case ConfigPin.cmd(["-l", pin_string]) do
-      {result, 0} ->
+      {response, 0} ->
         list =
-          result
+          response
           |> String.trim
           |> String.split
 
