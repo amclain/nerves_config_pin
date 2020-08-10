@@ -36,7 +36,7 @@ defmodule ConfigPin.MixProject do
 
   defp aliases do
     [
-      "coverage.show": "do coveralls, cmd xdg-open cover/excoveralls.html",
+      "coverage.show": "do coveralls.html, cmd xdg-open cover/excoveralls.html",
       "docs.show": "do docs, cmd xdg-open doc/index.html",
       test: "espec --cover",
     ]
