@@ -9,6 +9,7 @@ defmodule ConfigPin.MixProject do
       start_permanent: Mix.env == :prod,
       aliases: aliases(),
       deps: deps(),
+      docs: docs(),
       test_coverage: [tool: ExCoveralls, test_task: "espec"],
       dialyzer: [
         ignore_warnings: "dialyzer.ignore.exs",
@@ -51,6 +52,13 @@ defmodule ConfigPin.MixProject do
       {:dialyxir, "~> 1.0", only: :dev, runtime: false},
       {:espec, "~> 1.8", only: :test},
       {:ex_doc, "~> 0.22", only: :dev, runtime: false},
+    ]
+  end
+
+  defp docs do
+    [
+      main:   "ConfigPin",
+      extras: ["README.md"]
     ]
   end
 
