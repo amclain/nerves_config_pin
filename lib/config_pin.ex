@@ -54,11 +54,16 @@ defmodule ConfigPin do
   exit status. stderr is redirected to stdout, so failure messages will show up
   in the response.
   """
+  # coveralls-ignore-start
+  # This function is intended to be so simple that it can be excluded from
+  # code coverage. It is designed to be the function that can be mocked when
+  # testing this library, since it is the boundary to the `config-pin` utility.
   @spec cmd(args :: [String.t]) ::
     {response :: String.t, exit_status :: non_neg_integer}
   def cmd(args) do
     System.cmd("config-pin", args, stderr_to_stdout: true)
   end
+  # coveralls-ignore-stop
 
   @doc """
   Print the information about a pin to the console.
