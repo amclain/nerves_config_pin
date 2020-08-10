@@ -5,10 +5,19 @@ defmodule ConfigPin do
   """
 
   @typedoc """
-  The error message and exit code are passed through from `config-pin`.
+  Potential errors that can be returned by `config-pin`. Since new versions
+  of `config-pin` may be released, any unknown errors are passed through with
+  the message and exit code returned by `config-pin`.
+
+  *If you encounter an `:unknown` error, please file an issue or PR with this
+  repository, as we would like to support all `config-pin` errors idiomatically.*
   """
   @type config_pin_error ::
-    {:error, {message :: String.t, exit_code :: non_neg_integer}}
+    {:error, :invalid_mode}
+    | {:error, :invalid_pin}
+    | {:error, :pinmux_file_not_found}
+    | {:error, {:pin_not_modifiable, function :: String.t}}
+    | {:error, {:unknown, message :: String.t, exit_code :: non_neg_integer}}
 
   @valid_modes [
     :default,
@@ -76,9 +85,6 @@ defmodule ConfigPin do
 
   `pin` - The physical number of the pin to configure.
     For example, BBB `GPIO_30` is on pin `11`.
-
-  This function passes through the error message and exit code from `config-pin`
-  on failure.
   """
   @spec list_modes(header :: non_neg_integer, pin :: non_neg_integer) ::
     :ok | config_pin_error
@@ -95,7 +101,7 @@ defmodule ConfigPin do
         {:ok, list}
 
       error ->
-        format_config_pin_error(error)
+        parse_error(error)
     end
   end
 
@@ -108,15 +114,10 @@ defmodule ConfigPin do
   `pin` - The physical number of the pin to configure.
     For example, BBB `GPIO_30` is on pin `11`.
 
-  Returns a map of the configuration on success, or passes through the
-  error message and exit code from `config-pin` on failure.
+  Returns a map of the configuration on success.
   """
   @spec query(header :: non_neg_integer, pin :: non_neg_integer) ::
-    {:ok, map}
-    | {:ok, {:pin_not_modifiable, function :: String.t}}
-    | {:error, :invalid_pin}
-    | {:error, :pinmux_file_not_found}
-    | config_pin_error
+    {:ok, map} | config_pin_error
   def query(header, pin) do
     pin_string = make_pin_string(header, pin)
 
@@ -135,26 +136,8 @@ defmodule ConfigPin do
 
         {:ok, result}
 
-      {<<"Pin is not modifiable:", description::binary>>, 1} ->
-        function =
-          description
-          |> String.trim
-          |> String.split
-          |> List.last
-
-        {:ok, {:pin_not_modifiable, function}}
-
-      {<<"Invalid pin:", _::binary>>, 1} ->
-        {:error, :invalid_pin}
-
-      {response, _} = error ->
-        cond do
-          response =~ "pinmux file not found" ->
-            {:error, :pinmux_file_not_found}
-
-          true ->
-            format_config_pin_error(error)
-        end
+      error ->
+        parse_error(error)
     end
   end
 
@@ -170,13 +153,10 @@ defmodule ConfigPin do
   `mode` - The mode to set the pin to. Valid modes can be discovered with
     `valid_modes/2`, or by viewing the [`config-pin` source](https://github.com/beagleboard/bb.org-overlays/blob/master/tools/beaglebone-universal-io/config-pin#L65).
 
-  Returns `:ok` on success, or passes through the error message and exit code
-  from `config-pin` on failure.
+  Returns `:ok` on success.
   """
   @spec set(header :: non_neg_integer, pin :: non_neg_integer, mode :: term) ::
-    :ok
-    | {:error, :invalid_mode}
-    | config_pin_error
+    :ok | config_pin_error
   def set(header, pin, mode) do
     pin_string = make_pin_string(header, pin)
     mode_string = to_string(mode)
@@ -185,16 +165,41 @@ defmodule ConfigPin do
       {_, 0} ->
         :ok
 
-      {<<"Invalid mode:", _::binary>>, 1} ->
-        {:error, :invalid_mode}
-
       error ->
-        format_config_pin_error(error)
+        parse_error(error)
     end
   end
 
   defp make_pin_string(header, pin) do
     "P#{header}_#{pin}"
+  end
+
+  defp parse_error({<<"Invalid mode:", _::binary>>, 1}) do
+    {:error, :invalid_mode}
+  end
+
+  defp parse_error({<<"Invalid pin:", _::binary>>, 1}) do
+    {:error, :invalid_pin}
+  end
+
+  defp parse_error({<<"Pin is not modifiable:", description::binary>>, 1}) do
+    function =
+      description
+      |> String.trim
+      |> String.split
+      |> List.last
+
+    {:error, {:pin_not_modifiable, function}}
+  end
+
+  defp parse_error({message, exit_code}) do
+    cond do
+      message =~ "pinmux file not found" ->
+        {:error, :pinmux_file_not_found}
+
+      true ->
+        {:error, {:unknown, String.trim(message), exit_code}}
+    end
   end
 
   defp parse_header_and_pin(header_and_pin_string) do
@@ -212,10 +217,6 @@ defmodule ConfigPin do
     |> String.trim_trailing
     |> String.replace(~r/\s+([A-Z])/, "\n\\1")
     |> String.split("\n")
-  end
-
-  defp format_config_pin_error({message, exit_code}) do
-    {:error, {String.trim(message), exit_code}}
   end
 
   defp parse_query_params_list(params) do

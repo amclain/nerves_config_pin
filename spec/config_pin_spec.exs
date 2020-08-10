@@ -58,9 +58,9 @@ defmodule ConfigPin.Spec do
     let :cmd_expected_args, do: ["-l", "P9_1"]
     let :cmd_return, do: {"Pin is not modifiable: 9.1 GND\n", 1}
 
-    it "passes through the config-pin error on failure" do
+    it "returns an error if the pin is not modifiable" do
       expect ConfigPin.list_modes(9, 1)
-      |> to(eq {:error, {"Pin is not modifiable: 9.1 GND", 1}})
+      |> to(eq {:error, {:pin_not_modifiable, "GND"}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
@@ -91,7 +91,7 @@ defmodule ConfigPin.Spec do
 
     it "parses the response for a pin that is not modifiable" do
       expect ConfigPin.query(9, 1)
-      |> to(eq {:ok, {:pin_not_modifiable, "GND"}})
+      |> to(eq {:error, {:pin_not_modifiable, "GND"}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
@@ -123,6 +123,16 @@ defmodule ConfigPin.Spec do
     it "returns an error when the pinmux file is not found" do
       expect ConfigPin.query(9, 28)
       |> to(eq {:error, :pinmux_file_not_found})
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-q", "P0_0"]
+    let :cmd_return, do: {"<unknown error>", 1}
+
+    it "passes through an unknown config-pin error on failure" do
+      expect ConfigPin.query(0, 0)
+      |> to(eq {:error, {:unknown, "<unknown error>", 1}})
 
       expect ConfigPin |> to(accepted :cmd)
     end
