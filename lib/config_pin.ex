@@ -101,16 +101,20 @@ defmodule ConfigPin do
     For example, BBB `GPIO_30` is on pin `11`.
   """
   @spec list_modes(header :: non_neg_integer, pin :: non_neg_integer) ::
-    :ok | config_pin_error
+    {:ok, [atom]} | config_pin_error
   def list_modes(header, pin) do
     pin_string = make_pin_string(header, pin)
 
     case ConfigPin.cmd(["-l", pin_string]) do
       {response, 0} ->
+        valid_modes = Enum.map(@valid_modes, &to_string/1)
+
         list =
           response
           |> String.trim
           |> String.split
+          |> Enum.filter(&Enum.member?(valid_modes, &1))
+          |> Enum.map(&String.to_atom/1)
 
         {:ok, list}
 

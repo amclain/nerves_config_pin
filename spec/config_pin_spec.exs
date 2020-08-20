@@ -43,14 +43,24 @@ defmodule ConfigPin.Spec do
       |> to(eq {
         :ok,
         [
-          "default",
-          "gpio",
-          "gpio_pu",
-          "gpio_pd",
-          "gpio_input",
-          "uart",
+          :default,
+          :gpio,
+          :gpio_pu,
+          :gpio_pd,
+          :gpio_input,
+          :uart,
         ]
       })
+
+      expect ConfigPin |> to(accepted :cmd)
+    end
+
+    let :cmd_expected_args, do: ["-l", "P9_12"]
+    let :cmd_return, do: {"gpio unknown\n", 0}
+
+    it "filters out unknown modes" do
+      expect ConfigPin.list_modes(9, 12)
+      |> to(eq {:ok, [:gpio]})
 
       expect ConfigPin |> to(accepted :cmd)
     end
