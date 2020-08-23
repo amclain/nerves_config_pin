@@ -7,7 +7,7 @@ defmodule ConfigPin.MixProject do
     [
       app: :nerves_config_pin,
       description: @description,
-      version: "0.0.1",
+      version: "0.1.0",
       elixir: "~> 1.10",
       package: package(),
       start_permanent: Mix.env == :prod,
